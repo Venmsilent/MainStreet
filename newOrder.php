@@ -2,8 +2,6 @@
 include "utilFunctions.php";
 include "connectDatabase.php";
 
-$message = "";
-
 if (isset($_POST['finishOrder'])) {
     $user_id = isset($_POST['customer']) ? (int)$_POST['customer'] : 0;
     $product_ids = isset($_POST['product_id']) ? $_POST['product_id'] : array();
@@ -236,6 +234,12 @@ if (isset($_POST['finishOrder'])) {
         border-radius: 8px;
     }
 
+    .w3-dropdown-hover:hover,
+    .w3-dropdown-hover:first-child,
+    .w3-dropdown-click:hover {
+    background-color: transparent !important;
+    }
+
     .messageBox {
         margin-bottom: 20px;
         border-radius: 8px;
@@ -273,15 +277,10 @@ if (isset($_POST['finishOrder'])) {
     <?php include 'mainMenu.php'; ?>
 
     <div class="pageIntro">
-        <h1 class="pageTitle">Add New Order</h1>
+        <h1 class="pageTitle">Add Order</h1>
     </div>
 
     <div class="sectionBox">
-        <?php
-        if ($message != "") {
-            echo "<div class='w3-panel w3-pale-yellow w3-border'>" . $message . "</div>";
-        }
-        ?>
 
         <form action="newOrder.php" method="post" id="orderForm">
 
