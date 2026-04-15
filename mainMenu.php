@@ -8,6 +8,11 @@
         </div>
 
         <div class="msb-nav-links">
+
+            <div class="msb-dropdown">
+                <a href="home.php" class="w3-button msb-nav-btn">Home</a>
+            </div>
+        
             <div class="w3-dropdown-hover msb-dropdown">
                 <button class="w3-button msb-nav-btn">Customer</button>
                 <div class="w3-dropdown-content w3-bar-block w3-card-4 msb-dropdown-menu">
@@ -34,12 +39,10 @@
                 </div>
             </div>
 
-            <div class="w3-dropdown-hover msb-dropdown">
-                <button class="w3-button msb-nav-btn">Info</button>
-                <div class="w3-dropdown-content w3-bar-block w3-card-4 msb-dropdown-menu">
-                    <a href="about.php" class="w3-bar-item w3-button">About</a>
-                </div>
+            <div class="msb-dropdown">
+                <a href="about.php" class="w3-button msb-nav-btn">About</a>
             </div>
+
         </div>
 
     </div>
