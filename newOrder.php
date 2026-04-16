@@ -2,12 +2,14 @@
 include "utilFunctions.php";
 include "connectDatabase.php";
 
+$message = "";
+
 if (isset($_POST['finishOrder'])) {
-    $user_id = isset($_POST['customer']) ? (int)$_POST['customer'] : 0;
+    $customer_id = isset($_POST['customer']) ? (int)$_POST['customer'] : 0;
     $product_ids = isset($_POST['product_id']) ? $_POST['product_id'] : array();
     $quantities = isset($_POST['quantity']) ? $_POST['quantity'] : array();
 
-    if ($user_id <= 0) {
+    if ($customer_id <= 0) {
         $message = "Please select a customer.";
     } elseif (count($product_ids) == 0) {
         $message = "Please add at least one product to the order.";
@@ -43,8 +45,8 @@ if (isset($_POST['finishOrder'])) {
         } else {
             $status = "pending";
 
-            $sql = "INSERT INTO orders (user_id, order_date, total_amount, status)
-                    VALUES ($user_id, NOW(), $total_amount, '$status')";
+            $sql = "INSERT INTO orders (customer_id, order_date, total_amount, status)
+                    VALUES ($customer_id, NOW(), $total_amount, '$status')";
 
             if ($conn->query($sql) === TRUE) {
                 $order_id = $conn->insert_id;
@@ -282,7 +284,7 @@ if (isset($_POST['finishOrder'])) {
 
     <div class="sectionBox">
 
-        <form action="newOrder.php" method="post" id="orderForm">
+        <form action="newOrder.php" method="POST" id="orderForm">
 
             <h2 class="sectionHeading">Start a New Order</h2>
             <p class="sectionText">Select a customer, browse products, and add items to the order.</p>
@@ -291,16 +293,16 @@ if (isset($_POST['finishOrder'])) {
             <select class="w3-select w3-border" name="customer" id="customer" required>
                 <option value="" disabled selected>Choose Customer</option>
                 <?php
-                $sqlUsers = "SELECT user_id, first_name, last_name FROM users ORDER BY last_name, first_name";
-                $resultUsers = $conn->query($sqlUsers);
+                $sqlCustomers = "SELECT customer_id, firstName, lastName FROM customer ORDER BY lastName, firstName";
+                $resultCustomers = $conn->query($sqlCustomers);
 
-                if ($resultUsers && $resultUsers->num_rows > 0) {
-                    while ($rowUser = $resultUsers->fetch_assoc()) {
-                        $uid = $rowUser['user_id'];
-                        $fname = $rowUser['first_name'];
-                        $lname = $rowUser['last_name'];
+                if ($resultCustomers && $resultCustomers->num_rows > 0) {
+                    while ($rowCustomer = $resultCustomers->fetch_assoc()) {
+                        $cid = $rowCustomer['customer_id'];
+                        $fname = $rowCustomer['firstName'];
+                        $lname = $rowCustomer['lastName'];
 
-                        echo "<option value='$uid'>$uid - $lname, $fname</option>";
+                        echo "<option value='$cid'>$cid - $lname, $fname</option>";
                     }
                 }
                 ?>

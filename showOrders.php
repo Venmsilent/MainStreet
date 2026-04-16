@@ -180,6 +180,28 @@ include "utilFunctions.php";
         border-radius: 8px;
     }
 
+    .orderBlock {
+    background-color: #fffaf5;
+    border: 1px solid #d9ccbe;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 24px;
+}
+
+.orderInfo {
+    margin-bottom: 14px;
+    line-height: 1.8;
+}
+
+.tableHeader {
+    background-color: #d8c4b2;
+    color: #2f2018;
+}
+
+.w3-table {
+    background-color: #fffdfb;
+}
+
     @media (max-width: 768px) {
         .msb-nav-inner {
             flex-direction: column;
@@ -205,41 +227,37 @@ include "utilFunctions.php";
     }
 </style>
 </head>
-
 <body>
-
-<div cless="page-shell">
-
-    <?php include 'mainMenu.php'; ?>
+    <div class="page-shell">
+        <?php include 'mainMenu.php'; ?>
     
-    <div class="pageIntro">
+        <div class="pageIntro">
         <h1 class="pageTitle">View Orders</h1>
-    </div>
+        </div>
 
     <div class="sectionBox">
         <h2 class="sectionHeading">Customer Orders</h2>
-
         <?php
-        $sqlOrders = "
-            SELECT 
-                o.order_id,
-                o.user_id,
-                o.order_date,
-                o.total_amount,
-                o.status,
-                u.first_name,
-                u.last_name
-            FROM orders o
-            LEFT JOIN users u ON o.user_id = u.user_id
-            ORDER BY o.order_id DESC
-        ";
+            $sqlOrders = "
+                SELECT 
+                    o.order_id,
+                    o.customer_id,
+                    o.order_date,
+                    o.total_amount,
+                    o.status,
+                    c.firstName,
+                    c.lastName
+                FROM orders o
+                LEFT JOIN customer c ON o.customer_id = c.customer_id
+                ORDER BY o.order_id DESC
+            ";
 
         $resultOrders = $conn->query($sqlOrders);
 
         if ($resultOrders && $resultOrders->num_rows > 0) {
             while ($order = $resultOrders->fetch_assoc()) {
                 $order_id = $order['order_id'];
-                $customerName = htmlspecialchars($order['first_name'] . " " . $order['last_name']);
+                $customerName = htmlspecialchars($order['firstName'] . " " . $order['lastName']);
                 $orderDate = htmlspecialchars($order['order_date']);
                 $totalAmount = number_format((float)$order['total_amount'], 2);
                 $status = htmlspecialchars($order['status']);
