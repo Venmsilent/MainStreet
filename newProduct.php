@@ -1,10 +1,11 @@
 <?php
 include "utilFunctions.php";
+include "connectDatabase.php";
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Main Street Boutique - New Customer</title>
+    <title>Main Street Boutique - New Product</title>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <style>
     body {
@@ -95,12 +96,6 @@ include "utilFunctions.php";
         color: #2f2018;
     }
 
-    .pageSubtitle {
-        font-size: 18px;
-        margin-top: 8px;
-        color: #6a5142;
-    }
-
     .sectionBox {
         background-color: #e7ddd2;
         margin: 28px;
@@ -122,31 +117,6 @@ include "utilFunctions.php";
         margin-bottom: 24px;
     }
 
-    .subSectionTitle {
-        font-size: 26px;
-        margin-top: 0;
-        margin-bottom: 8px;
-        color: #2f2018;
-    }
-
-    .productCard {
-        border: 1px solid #e7ddd2;
-        background-color: #fffaf5;
-        padding: 15px;
-        margin-bottom: 20px;
-        min-height: 420px;
-        border-radius: 12px;
-    }
-
-    .productCard img {
-        width: 100%;
-        height: 220px;
-        object-fit: cover;
-        border: 1px solid #ddd;
-        background-color: #f2f2f2;
-        border-radius: 8px;
-    }
-
     .btnMain {
         background-color: #9b6845;
         color: white;
@@ -158,25 +128,28 @@ include "utilFunctions.php";
         color: white;
     }
 
-    .orderRow {
-        border-bottom: 1px solid #e5d8ca;
-        padding: 10px 0;
-    }
-
     .w3-select,
     .w3-input {
         border-radius: 8px;
     }
 
+    .sizeGroup label {
+        display: inline-block;
+        margin-right: 14px;
+        margin-bottom: 8px;
+    }
+
+    .previewImage {
+        margin-top: 10px;
+        max-width: 200px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+    }
+
     .w3-dropdown-hover:hover,
     .w3-dropdown-hover:first-child,
     .w3-dropdown-click:hover {
-    background-color: transparent !important;
-    }
-
-    .messageBox {
-        margin-bottom: 20px;
-        border-radius: 8px;
+        background-color: transparent !important;
     }
 
     @media (max-width: 768px) {
@@ -202,7 +175,7 @@ include "utilFunctions.php";
             max-height: 60px;
         }
     }
-</style>
+    </style>
 </head>
 <body>
 
@@ -211,76 +184,131 @@ include "utilFunctions.php";
     <?php include 'mainMenu.php'; ?>
 
     <div class="pageIntro">
-        <h1 class="pageTitle">Add Customer</h1>
+        <h1 class="pageTitle">Add Product</h1>
     </div>
 
     <div class="sectionBox">
 
-        <form method="POST" id="customerForm">
+        <form method="POST" enctype="multipart/form-data" id="productForm">
 
-            <h2 class="sectionHeading">Add a New Customer</h2>
-            <p class="sectionText">Input customer information below.</p>
+            <h2 class="sectionHeading">Add a New Product</h2>
+            <p class="sectionText">Input product information below.</p>
 
             <fieldset>
-                <label>First Name</label>
-                <input type="text" class="w3-input w3-border" name="fName">
+                <label>Product Name</label>
+                <input type="text" class="w3-input w3-border" name="product_name">
 
-                <label>Last Name</label>
-                <input type="text" class="w3-input w3-border" name="lName">
+                <label>Category</label>
+                <select class="w3-select w3-border" name="category">
+                    <option value="" disabled selected>Choose Category</option>
+                    <option value="Tops">Tops</option>
+                    <option value="Bottoms">Bottoms</option>
+                    <option value="Dresses">Dresses</option>
+                    <option value="Outerwear">Outerwear</option>
+                    <option value="Shoes">Shoes</option>
+                    <option value="Accessories">Accessories</option>
+                </select>
 
-                <label>Address</label>
-                <input type="text" class="w3-input w3-border" name="address">
+                <label>Description</label>
+                <input type="text" class="w3-input w3-border" name="description">
 
-                <label>City</label>
-                <input type="text" class="w3-input w3-border" name="city">
+                <label>Price</label>
+                <input type="text" class="w3-input w3-border" name="price">
 
-                <label>State</label>
-                <input type="text" class="w3-input w3-border" name="state">
+                <label>Available Sizes</label>
+                <div class="sizeGroup">
+                    <label><input type="checkbox" name="sizes[]" value="XXS"> XXS</label>
+                    <label><input type="checkbox" name="sizes[]" value="XS"> XS</label>
+                    <label><input type="checkbox" name="sizes[]" value="S"> S</label>
+                    <label><input type="checkbox" name="sizes[]" value="M"> M</label>
+                    <label><input type="checkbox" name="sizes[]" value="L"> L</label>
+                    <label><input type="checkbox" name="sizes[]" value="XL"> XL</label>
+                    <label><input type="checkbox" name="sizes[]" value="XXL"> XXL</label>
+                </div>
 
-                <label>ZIP</label>
-                <input type="text" class="w3-input w3-border" name="zip">
+                <label>Product Image</label>
+                <input type="file" class="w3-input w3-border" name="productImage" accept="image/*">
             </fieldset>
 
-            <br><button class="w3-button btnMain" type="submit" name="addCustomer">Add Customer</button>
+            <br><button class="w3-button btnMain" type="submit" name="addProduct">Add Product</button>
         </form>
 
         <?php
-            if(isset($_POST['addCustomer'])) {
-                if(!isset($_POST['fName']) || !isset($_POST['lName']) || !isset($_POST['address']) ||!isset($_POST['city']) ||!isset($_POST['state']) || !isset($_POST['zip'])) {
-                    echo "<br>You have not entered all the required fields.<br>";
-                    echo "Please go back and try again.<br>";
-
-                    exit;
-                }
-
-                include "connectDatabase.php";
-
-                # CREATE SHORT VARIABLE NAMES
-                $fName = mysqli_real_escape_string($conn, $_POST['fName']);
-                $lName = mysqli_real_escape_string($conn, $_POST['lName']);
-                $address = mysqli_real_escape_string($conn, $_POST['address']);
-                $city = mysqli_real_escape_string($conn, $_POST['city']);
-                $state = mysqli_real_escape_string($conn, $_POST['state']);
-                $zip = mysqli_real_escape_string($conn, $_POST['zip']);
-                
-                # CREATE THE SQL STRING
-                $sql = "INSERT INTO customer (firstName, lastName, address, city, state, zip) VALUES ('$fName','$lName', '$address', '$city', '$state', '$zip')";
-
-                if($conn->query($sql) === TRUE) {
-                    $customer_id = $conn->insert_id;
-                    echo "<br>";
-                    echo "<strong>Customer created successfully!</strong><br>";
-                    echo "Customer id: $customer_id<br>";
-                    echo "First Name: $fName<br>";
-                    echo "Last Name: $lName<br>";
-                    echo "Address: $address<br>";
-                    echo "City: $city<br>";
-                    echo "State: $state<br>";
-                    echo "ZIP: $zip<br>";
-                }
-
-                $conn->close();
+        if (isset($_POST['addProduct'])) {
+            if (
+                !isset($_POST['product_name']) || !isset($_POST['category']) ||
+                !isset($_POST['description']) || !isset($_POST['price'])
+            ) {
+                echo "<br>You have not entered all the required fields.<br>";
+                exit;
             }
+
+            $product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
+            $category = mysqli_real_escape_string($conn, $_POST['category']);
+            $description = mysqli_real_escape_string($conn, $_POST['description']);
+            $price = mysqli_real_escape_string($conn, $_POST['price']);
+            $sizes = isset($_POST['sizes']) ? $_POST['sizes'] : array();
+            $image_path = "";
+
+            if ($product_name == "" || $category == "" || $description == "" || $price == "") {
+                echo "<br>You have not entered all the required fields.<br>";
+                exit;
+            }
+
+            if (count($sizes) == 0) {
+                echo "<br>Please select at least one size.<br>";
+                exit;
+            }
+
+            if (isset($_FILES['productImage']) && $_FILES['productImage']['error'] == 0) {
+                $targetDir = "images/";
+
+                if (!is_dir($targetDir)) {
+                    mkdir($targetDir, 0777, true);
+                }
+
+                $fileName = time() . "_" . basename($_FILES["productImage"]["name"]);
+                $targetFile = $targetDir . $fileName;
+
+                if (move_uploaded_file($_FILES["productImage"]["tmp_name"], $targetFile)) {
+                    $image_path = mysqli_real_escape_string($conn, $targetFile);
+                } else {
+                    echo "<br>Image upload failed.<br>";
+                }
+            }
+
+            $sql = "INSERT INTO products (product_name, category, description, price, image_path)
+                    VALUES ('$product_name', '$category', '$description', '$price', '$image_path')";
+
+            if ($conn->query($sql) === TRUE) {
+                $product_id = $conn->insert_id;
+
+                foreach ($sizes as $size) {
+                    $safeSize = mysqli_real_escape_string($conn, $size);
+                    $sqlSize = "INSERT INTO product_sizes (product_id, size)
+                                VALUES ($product_id, '$safeSize')";
+                    $conn->query($sqlSize);
+                }
+
+                echo "<br>";
+                echo "<strong>Product created successfully!</strong><br>";
+                echo "Product ID: $product_id<br>";
+                echo "Product Name: " . htmlspecialchars($product_name) . "<br>";
+                echo "Category: " . htmlspecialchars($category) . "<br>";
+                echo "Description: " . htmlspecialchars($description) . "<br>";
+                echo "Price: $" . number_format((float)$price, 2) . "<br>";
+                echo "Sizes: " . htmlspecialchars(implode(", ", $sizes)) . "<br>";
+                echo "Image Path: " . htmlspecialchars($image_path) . "<br>";
+
+                if ($image_path != "" && file_exists($image_path)) {
+                    echo "<br><img src='$image_path' class='previewImage' alt='Product Image'>";
+                }
+            } else {
+                echo "<br>Error: " . $conn->error . "<br>";
+            }
+        }
+
+        $conn->close();
         ?>
     </div>
 </div>

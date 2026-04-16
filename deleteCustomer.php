@@ -192,7 +192,7 @@ include "utilFunctions.php";
     </div>
 
     <div class="sectionBox">
-        <form action="newOrder.php" method="POST" id="deleteCustomer">
+        <form method="POST" id="deleteCustomer">
             <h2 class="sectionHeading">Delete a Customer</h2>
             <p class="sectionText">Select a customer to delete. View Current Customer list below.
                 <b>NOTE: Only customers with NO ORDERS can be deleted.</b>

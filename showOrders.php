@@ -1,6 +1,22 @@
 <?php
 include "connectDatabase.php";
 include "utilFunctions.php";
+
+$message = "";
+
+if (isset($_POST['markCompleted'])) {
+    $order_id = (int)$_POST['order_id'];
+
+    $sqlUpdate = "UPDATE orders
+                  SET status = 'completed'
+                  WHERE order_id = $order_id";
+
+    if ($conn->query($sqlUpdate) === TRUE) {
+        $message = "Order #$order_id marked as completed.";
+    } else {
+        $message = "Error updating order: " . $conn->error;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html>
@@ -238,6 +254,7 @@ include "utilFunctions.php";
     <div class="sectionBox">
         <h2 class="sectionHeading">Customer Orders</h2>
         <?php
+        
             $sqlOrders = "
                 SELECT 
                     o.order_id,
@@ -254,6 +271,9 @@ include "utilFunctions.php";
 
         $resultOrders = $conn->query($sqlOrders);
 
+        if ($message != "")
+            echo "<div class='w3-panel w3-pale-green w3-border messageBox'>$message</div>";
+
         if ($resultOrders && $resultOrders->num_rows > 0) {
             while ($order = $resultOrders->fetch_assoc()) {
                 $order_id = $order['order_id'];
@@ -267,9 +287,26 @@ include "utilFunctions.php";
                 echo "<strong>Order ID:</strong> " . $order_id . "<br>";
                 echo "<strong>Customer:</strong> " . $customerName . "<br>";
                 echo "<strong>Order Date:</strong> " . $orderDate . "<br>";
-                echo "<strong>Status:</strong> " . $status . "<br>";
+
+                if ($status == "pending") {
+                    echo "<strong>Status:</strong> <span class='w3-tag w3-khaki'>Pending</span><br>";
+                }
+                else {
+                    echo "<strong>Status:</strong> <span class='w3-tag w3-green'>Completed</span><br>";
+                }
+
                 echo "<strong>Total Amount:</strong> $" . $totalAmount;
                 echo "</div>";
+
+                if ($status == "pending") {
+                    echo "<form method='POST' style='margin-bottom:15px;'>";
+                    echo "<input type='hidden' name='order_id' value='$order_id'>";
+                    echo "<button class='w3-button btnMain' type='submit' name='markCompleted'>Mark Completed</button>";
+                    echo "</form>";
+                } 
+                else {
+                    echo "<p><strong>This order is already completed.</strong></p>";
+                }
 
                 $sqlItems = "
                     SELECT 

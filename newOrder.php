@@ -7,6 +7,7 @@ $message = "";
 if (isset($_POST['finishOrder'])) {
     $customer_id = isset($_POST['customer']) ? (int)$_POST['customer'] : 0;
     $product_ids = isset($_POST['product_id']) ? $_POST['product_id'] : array();
+    $product_size_ids = isset($_POST['product_size_id']) ? $_POST['product_size_id'] : array();
     $quantities = isset($_POST['quantity']) ? $_POST['quantity'] : array();
 
     if ($customer_id <= 0) {
@@ -19,10 +20,22 @@ if (isset($_POST['finishOrder'])) {
 
         for ($i = 0; $i < count($product_ids); $i++) {
             $pid = (int)$product_ids[$i];
+            $psid = isset($product_size_ids[$i]) ? (int)$product_size_ids[$i] : 0;
             $qty = (int)$quantities[$i];
 
-            if ($pid > 0 && $qty > 0) {
-                $sql = "SELECT product_id, product_name, price FROM products WHERE product_id = $pid";
+            if ($pid > 0 && $psid > 0 && $qty > 0) {
+                $sql = "
+                    SELECT 
+                        p.product_id,
+                        p.product_name,
+                        p.price,
+                        ps.product_size_id,
+                        ps.size
+                    FROM product_sizes ps
+                    JOIN products p ON ps.product_id = p.product_id
+                    WHERE p.product_id = $pid
+                      AND ps.product_size_id = $psid
+                ";
                 $result = $conn->query($sql);
 
                 if ($result && $result->num_rows > 0) {
@@ -32,7 +45,9 @@ if (isset($_POST['finishOrder'])) {
 
                     $validItems[] = array(
                         "product_id" => $row['product_id'],
+                        "product_size_id" => $row['product_size_id'],
                         "product_name" => $row['product_name'],
+                        "size" => $row['size'],
                         "quantity" => $qty,
                         "price" => $row['price']
                     );
@@ -53,11 +68,12 @@ if (isset($_POST['finishOrder'])) {
 
                 foreach ($validItems as $item) {
                     $product_id = $item['product_id'];
+                    $product_size_id = $item['product_size_id'];
                     $quantity = $item['quantity'];
                     $price = $item['price'];
 
-                    $sqlItem = "INSERT INTO order_items (order_id, product_id, quantity, price)
-                                VALUES ($order_id, $product_id, $quantity, $price)";
+                    $sqlItem = "INSERT INTO order_items (order_id, product_id, product_size_id, quantity, price)
+                                VALUES ($order_id, $product_id, $product_size_id, $quantity, $price)";
                     $conn->query($sqlItem);
                 }
 
@@ -66,6 +82,31 @@ if (isset($_POST['finishOrder'])) {
                 $message = "Error creating order: " . $conn->error;
             }
         }
+    }
+}
+
+/* build product size map for dropdown */
+$productSizes = array();
+
+$sqlSizeMap = "
+    SELECT product_size_id, product_id, size
+    FROM product_sizes
+    ORDER BY product_id, FIELD(size, 'XXS','XS','S','M','L','XL','XXL')
+";
+$resultSizeMap = $conn->query($sqlSizeMap);
+
+if ($resultSizeMap && $resultSizeMap->num_rows > 0) {
+    while ($rowSize = $resultSizeMap->fetch_assoc()) {
+        $pid = $rowSize['product_id'];
+
+        if (!isset($productSizes[$pid])) {
+            $productSizes[$pid] = array();
+        }
+
+        $productSizes[$pid][] = array(
+            "product_size_id" => (int)$rowSize['product_size_id'],
+            "size" => $rowSize['size']
+        );
     }
 }
 ?>
@@ -163,12 +204,6 @@ if (isset($_POST['finishOrder'])) {
         color: #2f2018;
     }
 
-    .pageSubtitle {
-        font-size: 18px;
-        margin-top: 8px;
-        color: #6a5142;
-    }
-
     .sectionBox {
         background-color: #e7ddd2;
         margin: 28px;
@@ -190,19 +225,12 @@ if (isset($_POST['finishOrder'])) {
         margin-bottom: 24px;
     }
 
-    .subSectionTitle {
-        font-size: 26px;
-        margin-top: 0;
-        margin-bottom: 8px;
-        color: #2f2018;
-    }
-
     .productCard {
         border: 1px solid #e7ddd2;
         background-color: #fffaf5;
         padding: 15px;
         margin-bottom: 20px;
-        min-height: 420px;
+        min-height: 470px;
         border-radius: 12px;
     }
 
@@ -239,7 +267,7 @@ if (isset($_POST['finishOrder'])) {
     .w3-dropdown-hover:hover,
     .w3-dropdown-hover:first-child,
     .w3-dropdown-click:hover {
-    background-color: transparent !important;
+        background-color: transparent !important;
     }
 
     .messageBox {
@@ -270,7 +298,7 @@ if (isset($_POST['finishOrder'])) {
             max-height: 60px;
         }
     }
-</style>
+    </style>
 </head>
 <body>
 
@@ -284,10 +312,16 @@ if (isset($_POST['finishOrder'])) {
 
     <div class="sectionBox">
 
+        <?php
+        if ($message != "") {
+            echo "<div class='w3-panel w3-pale-yellow w3-border messageBox'>" . $message . "</div>";
+        }
+        ?>
+
         <form action="newOrder.php" method="POST" id="orderForm">
 
             <h2 class="sectionHeading">Start a New Order</h2>
-            <p class="sectionText">Select a customer, browse products, and add items to the order.</p>
+            <p class="sectionText">Select a customer, browse products, choose a size, and add items to the order.</p>
 
             <label><strong>Customer</strong></label>
             <select class="w3-select w3-border" name="customer" id="customer" required>
@@ -312,9 +346,24 @@ if (isset($_POST['finishOrder'])) {
                 <h3>Available Products</h3>
                 <div class="w3-row-padding">
                     <?php
-                    $sqlProducts = "SELECT product_id, product_name, category, description, price, image_path
-                                    FROM products
-                                    ORDER BY product_id";
+                    $sqlProducts = "
+                        SELECT 
+                            p.product_id,
+                            p.product_name,
+                            p.category,
+                            p.description,
+                            p.price,
+                            p.image_path,
+                            GROUP_CONCAT(
+                                ps.size 
+                                ORDER BY FIELD(ps.size, 'XXS','XS','S','M','L','XL','XXL') 
+                                SEPARATOR ', '
+                            ) AS sizes
+                        FROM products p
+                        LEFT JOIN product_sizes ps ON p.product_id = ps.product_id
+                        GROUP BY p.product_id, p.product_name, p.category, p.description, p.price, p.image_path
+                        ORDER BY p.product_id
+                    ";
                     $resultProducts = $conn->query($sqlProducts);
 
                     if ($resultProducts && $resultProducts->num_rows > 0) {
@@ -325,15 +374,23 @@ if (isset($_POST['finishOrder'])) {
                             $description = htmlspecialchars($row['description']);
                             $price = formatPrice($row['price']);
                             $image_path = htmlspecialchars($row['image_path']);
+                            $sizes = htmlspecialchars($row['sizes']);
 
                             echo "<div class='w3-third'>";
                             echo "<div class='productCard'>";
-                            echo "<img src='$image_path' alt='$product_name'>";
+
+                            if ($image_path != "" && file_exists($image_path)) {
+                                echo "<img src='$image_path' alt='$product_name'>";
+                            } else {
+                                echo "<img src='images/placeholder.jpg' alt='No image available'>";
+                            }
+
                             echo "<h4>$product_name</h4>";
                             echo "<p><strong>Category:</strong> $category</p>";
                             echo "<p><strong>Price:</strong> $$price</p>";
+                            echo "<p><strong>Sizes:</strong> $sizes</p>";
                             echo "<p>$description</p>";
-                            echo "<p><a href='productReviews.php?product_id=$product_id'>View Reviews</a></p>";
+                            echo "<p><a href='reviewProduct.php?product_id=$product_id'>Write / View Reviews</a></p>";
                             echo "</div>";
                             echo "</div>";
                         }
@@ -370,11 +427,20 @@ if (isset($_POST['finishOrder'])) {
                     </div>
 
                     <div class="w3-quarter">
+                        <label><strong>Size</strong></label>
+                        <select class="w3-select w3-border" id="sizeSelect">
+                            <option value="" disabled selected>Choose Size</option>
+                        </select>
+                    </div>
+
+                    <div class="w3-quarter">
                         <label><strong>Quantity</strong></label>
                         <input class="w3-input w3-border" type="number" id="quantityInput" min="1" value="1">
                     </div>
+                </div>
 
-                    <div class="w3-quarter" style="padding-top:24px;">
+                <div class="w3-row-padding" style="margin-top:18px;">
+                    <div class="w3-third">
                         <button class="w3-button btnMain w3-block" type="button" onclick="addProductToOrder()">Add To Order</button>
                     </div>
                 </div>
@@ -400,9 +466,31 @@ if (isset($_POST['finishOrder'])) {
 
 <script>
 let runningTotal = 0;
+const productSizes = <?php echo json_encode($productSizes); ?>;
+
+document.getElementById("productSelect").addEventListener("change", updateSizeOptions);
+
+function updateSizeOptions() {
+    const productSelect = document.getElementById("productSelect");
+    const sizeSelect = document.getElementById("sizeSelect");
+    const productId = productSelect.value;
+
+    sizeSelect.innerHTML = "<option value='' disabled selected>Choose Size</option>";
+
+    if (productSizes[productId]) {
+        productSizes[productId].forEach(function(item) {
+            const option = document.createElement("option");
+            option.value = item.product_size_id;
+            option.textContent = item.size;
+            option.setAttribute("data-size", item.size);
+            sizeSelect.appendChild(option);
+        });
+    }
+}
 
 function addProductToOrder() {
     const productSelect = document.getElementById("productSelect");
+    const sizeSelect = document.getElementById("sizeSelect");
     const quantityInput = document.getElementById("quantityInput");
     const orderItemsBox = document.getElementById("orderItemsBox");
     const totalDisplay = document.getElementById("totalDisplay");
@@ -413,10 +501,19 @@ function addProductToOrder() {
         return;
     }
 
-    const selectedOption = productSelect.options[productSelect.selectedIndex];
-    const productId = selectedOption.value;
-    const productName = selectedOption.getAttribute("data-name");
-    const productPrice = parseFloat(selectedOption.getAttribute("data-price"));
+    if (sizeSelect.selectedIndex <= 0) {
+        alert("Please choose a size.");
+        return;
+    }
+
+    const selectedProduct = productSelect.options[productSelect.selectedIndex];
+    const selectedSize = sizeSelect.options[sizeSelect.selectedIndex];
+
+    const productId = selectedProduct.value;
+    const productName = selectedProduct.getAttribute("data-name");
+    const productPrice = parseFloat(selectedProduct.getAttribute("data-price"));
+    const productSizeId = selectedSize.value;
+    const productSize = selectedSize.getAttribute("data-size");
     const quantity = parseInt(quantityInput.value);
 
     if (quantity <= 0 || isNaN(quantity)) {
@@ -437,16 +534,18 @@ function addProductToOrder() {
 
     row.innerHTML =
         "<strong>" + productName + "</strong> " +
-        "(ID: " + productId + ") - $" + productPrice.toFixed(2) +
+        "(ID: " + productId + ", Size: " + productSize + ") - $" + productPrice.toFixed(2) +
         " x " + quantity +
         " = $" + lineTotal.toFixed(2) +
         "<input type='hidden' name='product_id[]' value='" + productId + "'>" +
+        "<input type='hidden' name='product_size_id[]' value='" + productSizeId + "'>" +
         "<input type='hidden' name='quantity[]' value='" + quantity + "'>";
 
     orderItemsBox.appendChild(row);
 
     quantityInput.value = 1;
     productSelect.selectedIndex = 0;
+    sizeSelect.innerHTML = "<option value='' disabled selected>Choose Size</option>";
 }
 </script>
 
