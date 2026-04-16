@@ -181,7 +181,7 @@ include "utilFunctions.php";
     </div>
 
     <div class="sectionBox">
-        <h2 class="sectionHeading">Customer List</h2>
+        <h2 class="sectionHeading">Current Customers List</h2>
 
         <?php
         $sqlCustomers = "
